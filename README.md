@@ -887,13 +887,13 @@ SET birth = (2021 - age);  -- not working under safe update mode. Will be update
 * YAML is a data serialization language like XML, JSON.
 * Same code in YAML, XML & JSON respectively:
 	```yaml
-	microservices:
-		- app: user-authentication
+    microservices:
+        - app: user-authentication
 		  port: 9000
 		  version: 1.0
 	```
 	```xml
-	<microservices>
+    <microservices>
 		<microservice>
 			<app>user-authentication</app>
 			<port>9000</port>
@@ -903,7 +903,7 @@ SET birth = (2021 - age);  -- not working under safe update mode. Will be update
 	```
 	```json
 	{
-		"microservices": [
+        "microservices": [
 			{
 				"app": "user-authentication",
 				"port": 9000,
@@ -914,4 +914,103 @@ SET birth = (2021 - age);  -- not working under safe update mode. Will be update
 	```
 * YAML is more human readable & intuitive. It uses indentation and line separation. It is used in Docker Compose, Ansible, Prometheus, Kubernetes etc. 
 * Basic syntax:
-* 
+    ```yaml
+    # simple key: value pairs
+    app: user-authentication
+    port: 9000
+    version: 1.7
+    ```
+* Quotes are optional in the strings unless you are using special character like ``\n``.
+* **Objects** to group things by indenting:
+    * Note: You can use a YAML validator ([like this](https://onlineyamltools.com/edit-yaml)) since indentations could be hard to match.
+    ```yaml
+    microservice:  # this is the obj.
+        app: user-authentication  # these are the attributes.
+        port: 9000
+        version: 1.7
+        labels:  # object in an object.
+            tag: nginx
+    ```
+* **Lists** & **lists in lists**.
+    ```yaml
+    microservice:
+        - app: user-authentication  # 1st item in the list
+          port: 9000
+          version: 1.7  # Watch out for the indentation!
+          deployed: true  # true/false, on/off, yes/no. All are valid.
+        - app: shopping-cart  # 2nd item in the list
+          ports:
+            - 9002  # list in the list
+            - 9003  # the validator gave me error when I removed the dash here.
+            - 9004  # but not on this one. It could be a bug. This is the right way!
+          versions: [1.9, "2.2", false, 3]  # for only primitive data types!
+    
+    microservice:
+        - user-authentication
+        - false  # could be such simple values as well
+        
+    ```
+* Multi-line Strings
+    * We use a pipe ``|`` character to do it. Like `\n` version in Python.
+    * If we want yaml to interpret the string as a one-line sentence, we use ``>``.
+        * It puts a whitespace by itself, don't leave one at the end.
+    ```yaml
+    multiLineString: |  # or > if one-liner
+        this is a multiline string,
+        and should be all on line
+        really, okay?
+    # output:
+    # {
+    #     "multiLineString": "this is a multiline string,\nand should be all on line\nreally, okay?\n"
+    # }
+    ```
+    * `>-` or `|-` removes the linebreak (``\n``) appended at the end. It is called _block chomping indicator_. There are more crazy combinations here in this [stackoverflow](https://stackoverflow.com/questions/3790454/how-do-i-break-a-string-in-yaml-over-multiple-lines) post.
+    * Real life example:
+    ```yaml
+    command:
+        - sh
+        - -c
+        - |
+            #!/usr/bin/env bash -e
+            http () {
+                local path="${1}"
+                set -- -XGET -s --fail
+                # some more stuff here
+                curl -k "$@" "http://localhost:5601${path}"
+            }
+            http "/app/kibana"
+    ```
+* Environment variables (we do it with ``$`` sign.)
+    ```yaml
+    command:
+        - /bin/sh
+        - -ec
+        - >-
+            mysql -h 127.0.0.1 -u -root -p$MYSQL_ROOT_PASSWORD -e 'SELECT 1'
+    ```
+* Placeholders (its syntax is double curly braces ``{{ ... }}``)
+    * This value get replaced using template generator.
+    ```yml
+    metadata:
+        name: {{ .Values.service.name }}
+    spec:
+        selector:
+            app: {{ .Values.service.app }}
+        ports:
+            - protocol: TCP
+            port: {{ .Values.service.port }}
+    ```
+* If you wanna group your multiple yaml file into one, the syntax for it is three dashes `---`.
+    ```yaml
+    # simple key: value pairs
+    app: user-authentication
+    port: 9000
+    version: 1.7
+    ---
+    microservice:  # this is the obj.
+    app: user-authentication  # these are the attributes.
+    port: 9000
+    version: 1.7
+    labels:  # object in an object.
+        tag: nginx
+    ```
