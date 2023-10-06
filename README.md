@@ -883,3 +883,35 @@ SET birth = (2021 - age);  -- not working under safe update mode. Will be update
 ```
 
 # 4. YAML Basics & Notes
+* These notes are from this [YT video](https://www.youtube.com/watch?v=1uFVr15xDGg). Also, [this website](https://www.tutorialspoint.com/yaml/index.htm) seems to provide some docs for basics.
+* YAML is a data serialization language like XML, JSON.
+* Same code in YAML, XML & JSON respectively:
+	```yaml
+	microservices:
+		- app: user-authentication
+		  port: 9000
+		  version: 1.0
+	```
+	```xml
+	<microservices>
+		<microservice>
+			<app>user-authentication</app>
+			<port>9000</port>
+			<version>1.0</version>
+		</microservice>
+	</microservices>
+	```
+	```json
+	{
+		"microservices": [
+			{
+				"app": "user-authentication",
+				"port": 9000,
+				"version": "1.0"
+			}
+		]
+	}
+	```
+* YAML is more human readable & intuitive. It uses indentation and line separation. It is used in Docker Compose, Ansible, Prometheus, Kubernetes etc. 
+* Basic syntax:
+* 
