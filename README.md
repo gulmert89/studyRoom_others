@@ -938,7 +938,7 @@ SET birth = (2021 - age);  -- not working under safe update mode. Will be update
             - 9004  # but not on this one. It could be a bug. This is the right way!
           versions: [1.9, "2.2", false, 3]  # for only primitive data types!
     
-    microservice:
+    other_microservice:
         - user-authentication
         - false  # could be such simple values as well
         
