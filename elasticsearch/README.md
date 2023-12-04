@@ -1,4 +1,5 @@
-# 1. Beginner's Crash Course to Elastic Stack - Part 1: Intro to Elasticsearch and Kibana
+# 1. Beginner's Crash Course to Elastic Stack
+## 1.1. Intro to Elasticsearch and Kibana
 * **Kibana:** Provide some kind of a GUI to visualize things.
 * **Nodes:** In a cluster, there could be one or more nodes with unique IDs and names. Each node stores data in JSON format with unique IDs.
 * **Index:** Documents could be grouped into an index like "product index" and "customer index" like databases.
