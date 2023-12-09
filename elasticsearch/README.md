@@ -1,8 +1,8 @@
-# 1. Beginner's Crash Course to Elastic Stack
+# Beginner's Crash Course to Elastic Stack
 * The course repo: [Beginner's Crash Course to Elastic Stack Series](https://github.com/LisaHJung/Beginners-Crash-Course-to-Elastic-Stack-Series-Table-of-Contents)
 * The YouTube playlist: [Beginner's Crash Course to Elastic Stack](https://www.youtube.com/playlist?list=PL_mJOmq4zsHZYAyK606y7wjQtC0aoE6Es)
-## 1.1. Intro to Elasticsearch and Kibana
-### 1.1.1. Theory
+## 1. Intro to Elasticsearch and Kibana
+### 1.1. Theory
 * **Kibana:** Provide some kind of a GUI to analyze & visualize things.
 * **Nodes:** In a cluster, there could be one or more nodes with unique IDs and names. Each node stores data in JSON format with unique IDs.
     * [From a question] Nodes use cache to find data faster on OS.
@@ -12,7 +12,7 @@
     * Replica Shards: Primary shards are denoted as P0, P1... in the video. Replicas are R0, R1 etc. They are the backups of the primary shards. If one shard dies, replica one quickly replaces it in no time. Also, it speeds up the query searching as well like mentioned.
 * Command syntax: `GET _API/parameter`
 * **RDBMS vs. Elasticsearch:** Actually, elasticsearch is not a database. It just stores documents to be searched and performed analytics. It is schema-free and designed for full-text searches. You can fine-tune the relevance of your search result when it comes to precision, ranking and recall.
-### 1.1.2. Practice: Performing CRUD operations
+### 1.2. Practice: Performing CRUD operations
 ```js
 GET _cluster/health
 GET _nodes/stats
@@ -85,8 +85,8 @@ GET ${exampleVariable1} // _search
     }
 }
 ```
-## 1.2. Relevance of a Search
-### 1.2.1. Theory
+## 2. Relevance of a Search
+### 2.1. Theory
 * Documents with similar traits are grouped into an index.
 * Precision & recall don't determine which of the returned documents are more relevant compared to each other. This is determined by ***ranking***.
 * **Hit**: A search result presented to user.
@@ -101,7 +101,7 @@ GET ${exampleVariable1} // _search
     $IDF(word)=log_e(\frac{\text{Total number of documents}}{\text{Number of documents with the word in it}})$
 
     $TF\text{-}IDF(word)=TF(word)×IDF(word)$
-### 1.2.2. Practice: Search for information
+### 2.2. Practice: Search for information
 * By the way, we can delete an index we uploaded just by typing `DELETE news_headlines`.
 * Result of `GET news_headlines/_search`:
     ```js
@@ -122,7 +122,7 @@ GET ${exampleVariable1} // _search
     // get the total number of hits
     GET news_headlines/_search
     {
-    "track_total_hits": true
+        "track_total_hits": true
     }
     ```
     is this:
@@ -331,8 +331,8 @@ GET ${exampleVariable1} // _search
         }
     } // fetches 6 hits.
     ```
-## 1.3. Full-Text & Combined Queries
-### 1.3.1. Theory
+## 3. Full-Text & Combined Queries
+### 3.1. Theory
 * Since `match` query doesn't care about word order, in a lyric search, let's say, the results could be completely irrelevant. Thus, `match_phrase` is more successful retrieving more relevant and exact queries. Since it is looking for exact queries, recall is a bit lower I guess.
 * When the `match_phrase` parameter is used, all hits must meet the following criteria:
     * the search terms "Shape", "of", and "you" must appear in the field headline,
@@ -365,7 +365,7 @@ GET ${exampleVariable1} // _search
         }
     }
     ```
-### 1.3.2. Practice: Some More Advanced Stuff
+### 3.2. Practice: Some More Advanced Stuff
 ```js
 // searching for a phrase, not search terms with "match_phrase"
 GET news_headlines/_search
@@ -556,3 +556,9 @@ GET news_headlines/_search
   }
 } // hits drop to 33 since filtered.
 ```
+## 4. Aggregations
+### 4.1. Practice
+* sum: 
+    ```js
+    
+    ```
