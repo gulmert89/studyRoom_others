@@ -557,8 +557,326 @@ GET news_headlines/_search
 } // hits drop to 33 since filtered.
 ```
 ## 4. Aggregations
-### 4.1. Practice
-* sum: 
-    ```js
-    
-    ```
+### 4.1. Theory
+* There are 4 ***bucket aggregations***:
+    1. Date Histogram Agregation
+        * Fixed_interval
+        * Calendar_interval
+    2. Histogram Aggregation
+    3. Range Aggregation
+    4. Terms Aggregation
+* **Combined Aggregations**: So far, we have ran ***metric aggregations*** or ***bucket aggregations*** to answer simple questions. There will be times when we will ask more complex questions that require running combinations of these aggregations.
+* `[not completed]` Study: [How to write scripts](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-scripting-using.html)
+* _**Q:** Aggregated result is based on shard level correct?_
+* _**A:** Yes! Aggregation is performed on every shard and the results from every shard are sent to the coordinator node. The coordinator node merges the shard results together into one final response which is sent to the user._
+### 4.2. Practice
+```js
+GET ecommerce_data/_search
+{
+  "track_total_hits": true,
+  "size": 3, 
+  "query": {
+    "match_all": {}
+  }
+}
+
+// adjust bad debt records
+POST ecommerce_data/_delete_by_query
+{
+  "query": {
+    "range": {
+      "UnitPrice": {
+        "lte": 0
+      }
+    }
+  }
+}
+
+// remove extreme values: almost all the UnitPrice values are below 500.
+POST ecommerce_data/_delete_by_query
+{
+  "query": {
+    "range": {
+      "UnitPrice": {
+        "gte": 500
+      }
+    }
+  }
+}
+
+// sum
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "sum_unit_price": {
+      "sum": {
+        "field": "UnitPrice"
+      }
+    }
+  }
+}
+
+// min
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggregations": {
+    "min_unit_price" : {
+      "min": {
+        "field": "UnitPrice"
+      }
+    }
+  }
+}
+
+// max
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "max_unit_price": {
+      "max": {
+        "field": "UnitPrice"
+      }
+    }
+  }
+}
+
+// average
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "max_unit_price": {
+      "avg": {
+        "field": "UnitPrice"
+      }
+    }
+  }
+}
+
+// statistics
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "stats_of_unit_price": {
+      "stats": {
+        "field": "UnitPrice"
+      }
+    }
+  }
+}
+
+// cardinality/unique values
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_customer_count": {
+      "cardinality": {
+        "field": "Country"
+      }
+    }
+  }
+}
+
+// Mert: list unique countries
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "unique_countries": {
+      "terms": {
+        "field": "Country",
+        "size": 100
+      }
+    }
+  }
+}
+
+// average at a specific country
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "query": {
+    "match": {
+      "Country": "Finland"
+    }
+  },
+  "aggs": {
+    "average_of_country": {
+      "avg": {
+        "field": "UnitPrice"
+      }
+    }
+  }
+}
+
+// 1. date histogram aggregation: fixed_interval
+GET ecommerce_data/_search
+{
+  "size": 0, 
+  "aggs": {
+    "transactions_by_8hrs": {
+      "date_histogram": {
+        "field": "InvoiceDate",
+        "fixed_interval": "8h"
+      }
+    }
+  }
+}
+
+// 1. date histogram aggregation: calendar_interval
+GET ecommerce_data/_search
+{
+  "size": 0, 
+  "aggs": {
+    "transactions_by_8hrs": {
+      "date_histogram": {
+        "field": "InvoiceDate",
+        "calendar_interval": "1M",
+        "order": {
+          "_key": "desc"
+        }
+      }
+    }
+  }
+}
+
+// 2. histogram aggregation
+GET ecommerce_data/_search
+{
+  "size": 1,
+  "aggs": {
+    "transaction_per_price_interval": {
+      "histogram": {
+        "field": "UnitPrice",
+        "interval": 50,
+        "order": {
+          "_key": "asc"
+        }
+      }
+    }
+  }
+}
+
+// 3. range aggregation
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "transactions_per_date_ranges": {
+      "range": {
+        "field": "InvoiceDate",
+        "ranges": [
+          {
+            "from": "1/1/2011 00:00",
+            "to": "2/1/2011 00:00"
+          },
+          {
+            "from": "06/1/2011 00:07",
+            "to": "06/1/2011 12:45"
+          },
+          {
+            "from": "12/1/2011 00:00"
+          }
+        ]  // cannot sort these
+      }
+    }
+  }
+}
+
+// 4. terms aggregation: top 5
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggregations": {
+    "top_5_customers": {
+      "terms": {
+        "field": "CustomerID",
+        "size": 5,
+        "order": {
+          "_count": "desc"  // not _key, but _count !!!
+        }
+      }
+    }
+  }
+}
+
+// 4. terms aggregation: worst 5
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggregations": {
+    "top_5_customers": {
+      "terms": {
+        "field": "CustomerID",
+        "size": 5,
+        "order": {
+          "_count": "asc"  // not _key, but _count !!!
+        }
+      }
+    }
+  }
+}
+
+# Combined Aggregations
+// sum of revenue per month
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "transaction_per_month": {
+      "date_histogram": {
+        "field": "InvoiceDate",
+        "calendar_interval": "month",
+        "order": {
+          "monthly_revenue": "desc"
+        }
+      },
+      "aggs": {
+        "monthly_revenue": {
+          "sum": {
+            "script": {
+              "source": "doc['UnitPrice'].value * doc['Quantity'].value"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// multiple metrics per bucket: monthly revenue and the number of unique customers per month
+GET ecommerce_data/_search
+{
+  "size": 0,
+  "aggs": {
+    "transaction_per_month": {
+      "date_histogram": {
+        "field": "InvoiceDate",
+        "calendar_interval": "month",
+        "order": {
+          "unique_customers_per_month": "desc"
+        }
+      },
+      "aggs": {
+        "monthly_revenue": {
+          "sum": {
+            "script": {
+              "source": "doc['UnitPrice'].value * doc['Quantity'].value"
+            }
+          }
+        },
+        "unique_customers_per_month": {
+          "cardinality": {
+            "field": "CustomerID"
+          }
+        }
+      }
+    }
+  }
+}
+```
