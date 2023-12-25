@@ -880,3 +880,256 @@ GET ecommerce_data/_search
   }
 }
 ```
+## 5. Mappings
+### 5.1. Theory
+* **Dynamic Mapping:** When we index a document in elastic without providing any mapping, elasticsearch automatically infers the data types from the field contents. So it creates or updates the mapping by default. This is called ***dynamic mapping***.
+* For the list of all field types, click [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html)!
+* By default, every string gets mapped twice as a text field and as a keyword multi-field. Each field type is primed for different types of requests.
+    * ***Text*** field type is designed for full-text searches.
+    * ***Keyword*** field type is designed for exact searches, aggregations, and sorting.
+* In ***text field type***, text analysis is performed and every token is assigned an inverse index ID. The same process occurs every time you index a new document.
+![text-vs-keyword.png](files/text-vs-keyword.png)
+* Double indexing of strings is a bit wasteful. So it's better to plan the use cases of the fields and assign a type accordingly. Example:
+    |String Fields|Desired Field Type|
+    |:------------|:----------------:|
+    |country_of_origin|text & keyword|
+    |description, name|text only|
+    |produce_type|keyword|
+* Rules of Defining your own mapping:
+    1. If you do not define a mapping ahead of time, Elasticsearch dynamically creates the mapping for you.
+    2. If you do decide to define your own mapping, you can do so at index creation.
+    3. ONE mapping is defined per index. Once the index has been created, we can only add new fields to a mapping. We CANNOT change the mapping of an existing field.
+    4. If you must change the type of an existing field, you must create a new index with the desired mapping, then reindex all documents into the new index.
+* Since we can't change the mapping of a field (e.g. a disabled field needs to be enabled again), we have to create a new index and reindex the old one onto it.
+* ***Runtime*** **Field**: Creating a temporary field to use. It is created only when a user runs a request against the runtime field (see the field below: `Name-your-runtime-field-here`).
+    ```js
+    PUT Enter-name-of-index/_mapping
+    {
+        "runtime": {
+            "Name-your-runtime-field-here": {
+                "type": "Specify-field-type-here",
+                "script": {
+                    "source": "Specify the formula you want executed"
+                }
+            }
+        }
+    }
+    ```
+* `GET newest_temp_index/_mapping` ---> Note that the runtime field is not listed under `properties` object which includes the fields in the documents. This is because the runtime field `total` is not indexed!
+* **Q:** If possible please explain the `_meta` in mapping which was part of previous video?
+    * **A:** So the `_meta` field was automatically created by the ml file data visualizer. This is a field where you can store any information regarding the index or the app for developers who are managing it. Think of this field as a place where you can include information regarding the app so developers have info necessary to debug.
+    ```js
+    {
+        "mappings": {
+            "_meta": {
+               "created_by": "Mert"
+            },
+            "properties": {
+                "botanical_name": {
+    ...
+    ```
+### 5.2. Practice
+```js
+// index a sample document
+POST temp_index/_doc
+{
+    "name": "Pineapple",
+    "botanical_name": "Ananas comosus",
+    "produce_type": "Fruit",
+    "country_of_origin": "New Zealand",
+    "date_purchased": "2020-06-02T12:15:35",
+    "quantity": 200,
+    "unit_price": 3.11,
+    "description": "a large juicy tropical fruit consisting of aromatic edible yellow flesh surrounded by a tough segmented skin and topped with a tuft of stiff leaves.These pineapples are sourced from New Zealand.",
+    "vendor_details": {
+        "vendor": "Tropical Fruit Growers of New Zealand",
+        "main_contact": "Hugh Rose",
+        "vendor_location": "Whangarei, New Zealand",
+        "preferred_vendor": true
+    }
+}
+
+// view the mappings
+GET temp_index/_mapping
+
+// edit the mappings
+// Alternative 1: You can copy/paste the output of GET temp_index/_mapping command, delete the 2nd line which contains "temp_index": {..., and modify the mappings.
+// Alternative 2: Write everything one by one.
+PUT new_temp_index
+{
+  "mappings": {
+    "properties": {
+      "botanical_name": {
+        "enabled": false
+      },
+      "country_of_origin": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "date_purchased": {
+        "type": "date"
+      },
+      "description": {
+        "type": "text"
+      },
+      "name": {
+        "type": "text"
+      },
+      "produce_type": {
+        "type": "keyword"
+      },
+      "quantity": {
+        "type": "long"
+      },
+      "unit_price": {
+        "type": "float"
+      },
+      "vendor_details": {
+        "enabled": false
+      }
+    }
+  }
+}
+
+// view the new mappings of the new index
+GET new_temp_index/_mapping
+
+// index a document into it
+POST new_temp_index/_doc
+{
+    "name": "Pineapple",
+    "botanical_name": "Ananas comosus",
+    "produce_type": "Fruit",
+    "country_of_origin": "New Zealand",
+    "date_purchased": "2020-06-02T12:15:35",
+    "quantity": 200,
+    "unit_price": 3.11,
+    "description": "a large juicy tropical fruit consisting of aromatic edible yellow flesh surrounded by a tough segmented skin and topped with a tuft of stiff leaves.These pineapples are sourced from New Zealand.",
+    "vendor_details": {
+        "vendor": "Tropical Fruit Growers of New Zealand",
+        "main_contact": "Hugh Rose",
+        "vendor_location": "Whangarei, New Zealand",
+        "preferred_vendor": true
+    }
+}
+
+// add another with a new field "organic"
+POST new_temp_index/_doc
+{
+  "name": "Mango",
+  "botanical_name": "Harum Manis",
+  "produce_type": "Fruit",
+  "country_of_origin": "Indonesia",
+  "organic": true,
+  "date_purchased": "2020-05-02T07:15:35",
+  "quantity": 500,
+  "unit_price": 1.5,
+  "description": "Mango Arumanis or Harum Manis is originated from East Java. Arumanis means harum dan manis or fragrant and sweet just like its taste. The ripe Mango Arumanis has dark green skin coated with thin grayish natural wax. The flesh is deep yellow, thick, and soft with little to no fiber. Mango Arumanis is best eaten when ripe.",
+  "vendor_details": {
+    "vendor": "Ayra Shezan Trading",
+    "main_contact": "Suharto",
+    "vendor_location": "Binjai, Indonesia",
+    "preferred_vendor": true
+  }
+}
+
+// view the mappings again. see the new field
+GET new_temp_index/_mapping
+
+// enable "botanical_name" again with a new index
+PUT newest_temp_index
+{
+  "mappings": {
+    "_meta": {
+      "created_by": "Mert"
+    },
+    "properties": {
+      "botanical_name": {
+        "type": "text"
+      },
+      "country_of_origin": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "date_purchased": {
+        "type": "date"
+      },
+      "description": {
+        "type": "text"
+      },
+      "name": {
+        "type": "text"
+      },
+      "organic": {
+        "type": "boolean"
+      },
+      "produce_type": {
+        "type": "keyword"
+      },
+      "quantity": {
+        "type": "long"
+      },
+      "unit_price": {
+        "type": "float"
+      },
+      "vendor_details": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}
+
+// view the mappings again. see the enabled field
+GET newest_temp_index/_mapping
+
+// reindex the data from original index
+POST _reindex
+{
+  "source": {
+    "index": "new_temp_index"
+  },
+  "dest": {
+    "index": "newest_temp_index"
+  }
+}
+
+// Optional: You can delete old index, create a new mapping with the same name, reindex it and deleted the previous one.
+
+// runtime field: Like a function. Only runs when that field name is requested. Not stored.
+PUT newest_temp_index/_mapping
+{
+  "runtime": {
+    "total": {
+      "type": "double",
+      "script": {
+        "source": "emit(doc['unit_price'].value* doc['quantity'].value)"
+      }  // To calculate total expense. btw, emit is required. it's probably similar to eval() in Python.
+    }
+  }
+}
+
+// view the mappings to see the "runtime" field. Note that the runtime field is not listed under properties object which includes the fields in the documents.
+GET newest_temp_index/_mapping
+
+// send an aggregation request to calculate "total expense"
+GET newest_temp_index/_search
+{
+  "size": 0,
+  "aggs": {
+    "total_expense": {
+      "sum": {
+        "field": "total"
+      }
+    }
+  }
+}
+```
